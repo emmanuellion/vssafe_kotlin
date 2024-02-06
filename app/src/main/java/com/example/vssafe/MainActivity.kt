@@ -152,6 +152,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun GreetingPreview() {
     VssafeTheme {
-        Greeting("nigg")
+        Greeting("oui")
     }
 }
