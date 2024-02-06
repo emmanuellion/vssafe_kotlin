@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
@@ -25,8 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.example.vssafe.ui.theme.VssafeTheme
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -41,10 +42,12 @@ class MainActivity : ComponentActivity() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         if (isLocationPermissionGranted()) {
-            handleLocationLogic()
+            mainPrint()
         } else {
-            // Location permission not granted, request it
             requestLocationPermission()
+            if (isLocationPermissionGranted()) {
+                mainPrint()
+            }
         }
 
     }
@@ -64,64 +67,31 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            // Check if the user granted the location permission
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Location permission granted, proceed with your logic
-                handleLocationLogic()
-            } else {
-                // Location permission not granted, handle accordingly (e.g., show a message)
-                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun handleLocationLogic() {
+    private fun mainPrint() {
         setContent {
             VssafeTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    LocationContent()
+                    HandleLocationLogic()
                 }
             }
         }
     }
 
-
     @Composable
-    fun LocationContent() {
+    fun HandleLocationLogic() {
         var location by remember { mutableStateOf<Location?>(null) }
 
-        LaunchedEffect(true) {
-            if (ActivityCompat.checkSelfPermission(
-                    this@MainActivity,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                    this@MainActivity,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                // Handle permission request here if needed
-                return@LaunchedEffect
-            }
-
-            location = getLastLocation()
+        LaunchedEffect(Unit) {
+            location = getCurrentLocation()
         }
 
         Draw(location)
     }
 
-    private suspend fun getLastLocation(): Location? = withContext(Dispatchers.Default) {
+    private suspend fun getCurrentLocation(): Location? = withContext(Dispatchers.Default) {
         suspendCoroutine { continuation ->
             if (ActivityCompat.checkSelfPermission(
                     this@MainActivity,
@@ -133,7 +103,11 @@ class MainActivity : ComponentActivity() {
             ) {
                 continuation.resume(null)
             } else {
-                fusedLocationClient.lastLocation
+                LocationRequest().apply {
+                    priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+                    interval = 500 // Update interval in milliseconds, adjust as needed
+                }
+                fusedLocationClient.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, null)
                     .addOnSuccessListener { location ->
                         continuation.resume(location)
                     }
@@ -143,8 +117,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-
 
     @Composable
     fun Draw(location: Location?) {
@@ -179,24 +151,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-//    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-//    var txt = ""
-//
-//    if (ActivityCompat.checkSelfPermission(
-//            this,
-//            Manifest.permission.ACCESS_FINE_LOCATION
-//        ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-//            this,
-//            Manifest.permission.ACCESS_COARSE_LOCATION
-//        ) != PackageManager.PERMISSION_GRANTED
-//    ) {
-//       return
-//    }
-//    fusedLocationClient.lastLocation.addOnSuccessListener { location : Location? ->
-//        if (location != null) {
-//            txt = "Latitude: ${location.latitude} ,  Longitude: ${location.longitude}"
-//        }
-//    }
     VssafeTheme {
         Greeting("nigg")
     }
