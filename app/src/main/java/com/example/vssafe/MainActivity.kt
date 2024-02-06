@@ -198,6 +198,6 @@ fun GreetingPreview() {
 //        }
 //    }
     VssafeTheme {
-        Greeting("nigg")
+        Greeting("oui")
     }
 }
